@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Pond Catchment Analysis</title>
+
+    <link
+        rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    >
+
+    <style>
+
+.pond-marker {
+    background: white;
+    border: 3px solid #0077cc;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+}
+
+.map-legend {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1000;
+    background: white;
+    padding: 12px 16px;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.25);
+    font-size: 14px;
+    line-height: 1.7;
+}
+
+.map-legend h4 {
+    margin: 0 0 8px 0;
+    font-size: 15px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.legend-pond {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: white;
+    border: 3px solid #0077cc;
+    display: inline-block;
+}
+
+.legend-catchment {
+    width: 22px;
+    height: 14px;
+    background: rgba(0, 119, 204, 0.25);
+    border: 3px solid #0077cc;
+    display: inline-block;
+}
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f4f7f9;
+            color: #1f2937;
+        }
+
+        header {
+            background: linear-gradient(135deg, #075985, #0284c7);
+            color: white;
+            padding: 28px 40px;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 30px;
+        }
+
+        header p {
+            margin: 8px 0 0;
+            opacity: 0.9;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+
+        .upload-box {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+            text-align: center;
+        }
+
+        .upload-box h2 {
+            margin-top: 0;
+        }
+
+        .file-input {
+            margin: 20px 0;
+            padding: 18px;
+            border: 2px dashed #38bdf8;
+            border-radius: 12px;
+            background: #f0f9ff;
+            width: 100%;
+        }
+
+        button {
+            background: #0284c7;
+            color: white;
+            border: none;
+            padding: 13px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #0369a1;
+        }
+
+        button:disabled {
+            background: #94a3b8;
+            cursor: not-allowed;
+        }
+
+        #result {
+            margin-top: 30px;
+        }
+
+        .status {
+            background: white;
+            padding: 18px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.06);
+        }
+
+        .success {
+            color: #166534;
+            background: #f0fdf4;
+            border-left: 5px solid #22c55e;
+        }
+
+        .error {
+            color: #991b1b;
+            background: #fef2f2;
+            border-left: 5px solid #ef4444;
+        }
+
+        .loading {
+            color: #075985;
+            background: #f0f9ff;
+            border-left: 5px solid #0284c7;
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 18px;
+            margin-bottom: 25px;
+        }
+
+        .card {
+            background: white;
+            padding: 22px;
+            border-radius: 14px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.07);
+        }
+
+        .card-title {
+            color: #64748b;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        .card-value {
+            font-size: 25px;
+            font-weight: bold;
+            color: #075985;
+        }
+
+        .section {
+            background: white;
+            padding: 25px;
+            border-radius: 14px;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.07);
+        }
+
+        .section h2 {
+            margin-top: 0;
+            color: #075985;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #e5e7eb;
+            text-align: left;
+        }
+
+        th {
+            color: #64748b;
+        }
+
+        #map {
+            height: 520px;
+            width: 100%;
+            border-radius: 12px;
+        }
+
+        .download-btn {
+            display: inline-block;
+            margin-top: 15px;
+            background: #16a34a;
+            color: white;
+            padding: 13px 25px;
+            border-radius: 8px;
+            text-decoration: none;
+        }
+
+        .download-btn:hover {
+            background: #15803d;
+        }
+
+        footer {
+            text-align: center;
+            padding: 25px;
+            color: #64748b;
+        }
+
+        @media (max-width: 600px) {
+            header {
+                padding: 22px;
+            }
+
+            header h1 {
+                font-size: 24px;
+            }
+
+            .container {
+                padding: 0 12px;
+            }
+
+            .upload-box {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <h1>🌊 Pond Catchment Analysis</h1>
+    <p>Terrain-based pond location and catchment analysis system</p>
+</header>
+
+<div class="container">
+
+    <div class="upload-box">
+
+        <h2>Upload Contour Data</h2>
+
+        <p>
+            Upload a KML contour file to analyze terrain,
+            slope, flow accumulation and pond suitability.
+        </p>
+
+        <input
+            type="file"
+            id="file"
+            class="file-input"
+            accept=".kml"
+        >
+
+        <br>
+
+        <button id="analyzeButton">
+            🔍 Analyze KML
+        </button>
+
+    </div>
+
+    <div id="result"></div>
+
+</div>
+
+<footer>
+    Pond Catchment Analysis System
+</footer>
+
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+
+let map = null;
+
+document
+    .getElementById("analyzeButton")
+    .addEventListener("click", analyze);
+
+async function analyze() {
+
+    const fileInput =
+        document.getElementById("file");
+
+    const result =
+        document.getElementById("result");
+
+    const button =
+        document.getElementById("analyzeButton");
+
+
+    // ========================================
+    // CHECK FILE
+    // ========================================
+
+    if (!fileInput.files.length) {
+
+        result.innerHTML = `
+            <div class="status error">
+                ❌ Please select a KML file first.
+            </div>
+        `;
+
+        return;
+    }
+
+
+    const formData = new FormData();
+
+    formData.append(
+        "file",
+        fileInput.files[0]
+    );
+
+
+    button.disabled = true;
+
+    button.textContent =
+        "⏳ Analyzing...";
+
+
+    result.innerHTML = `
+        <div class="status loading">
+            ⏳ Analyzing KML and calculating terrain...
+            Please wait.
+        </div>
+    `;
+
+
+    try {
+
+        // ========================================
+        // SEND KML TO FLASK
+        // ========================================
+
+        const response =
+            await fetch(
+                "/analyze",
+                {
+                    method: "POST",
+                    body: formData
+                }
+            );
+
+
+        const data =
+            await response.json();
+
+
+        if (!response.ok ||
+            data.status !== "success") {
+
+            throw new Error(
+                data.message ||
+                "Analysis failed"
+            );
+        }
+
+
+        // ========================================
+        // GET RESULTS
+        // ========================================
+
+        const pond =
+            data.pond;
+
+        const terrain =
+            data.terrain;
+
+        const slope =
+            data.slope;
+
+        const catchment =
+            data.catchment;
+
+        const input =
+            data.input;
+
+
+        const filename =
+            data.output.geojson
+                .split("/")
+                .pop();
+
+
+        // ========================================
+        // DISPLAY ANALYSIS RESULTS
+        // ========================================
+
+        result.innerHTML = `
+
+            <div class="status success">
+                <strong>
+                    ✅ Analysis completed successfully!
+                </strong>
+                KML data has been processed.
+            </div>
+
+
+            <div class="cards">
+
+                <div class="card">
+                    <h3>Total Contours</h3>
+                    <strong>
+                        ${input.total_contours}
+                    </strong>
+                </div>
+
+
+                <div class="card">
+                    <h3>Elevation Range</h3>
+                    <strong>
+                        ${input.minimum_elevation_m}
+                        -
+                        ${input.maximum_elevation_m}
+                        m
+                    </strong>
+                </div>
+
+
+                <div class="card">
+                    <h3>Average Slope</h3>
+                    <strong>
+                        ${slope.average_degrees}°
+                    </strong>
+                </div>
+
+
+                <div class="card">
+                    <h3>Catchment Area</h3>
+                    <strong>
+                        ${catchment.area_hectares}
+                        ha
+                    </strong>
+                </div>
+
+
+                <div class="card">
+                    <h3>Suitability Score</h3>
+                    <strong>
+                        ${Number(
+                            pond.suitability_score
+                        ).toFixed(4)}
+                    </strong>
+                </div>
+
+
+                <div class="card">
+                    <h3>Flow Accumulation</h3>
+                    <strong>
+                        ${pond.flow_accumulation_cells}
+                    </strong>
+                </div>
+
+            </div>
+
+
+            <!-- ================================= -->
+            <!-- BEST POND LOCATION -->
+            <!-- ================================= -->
+
+            <div class="section">
+
+                <h2>
+                    📍 Best Pond Location
+                </h2>
+
+                <table>
+
+                    <tr>
+                        <th>Latitude</th>
+                        <td>
+                            ${pond.latitude}
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <th>Longitude</th>
+                        <td>
+                            ${pond.longitude}
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <th>Elevation</th>
+                        <td>
+                            ${Number(
+                                pond.elevation_m
+                            ).toFixed(2)} m
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <th>Slope</th>
+                        <td>
+                            ${pond.slope_degrees}°
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <th>Suitability Score</th>
+                        <td>
+                            ${Number(
+                                pond.suitability_score
+                            ).toFixed(4)}
+                        </td>
+                    </tr>
+
+                </table>
+
+            </div>
+
+
+            <!-- ================================= -->
+            <!-- TERRAIN ANALYSIS -->
+            <!-- ================================= -->
+
+            <div class="section">
+
+                <h2>
+                    ⛰️ Terrain Analysis
+                </h2>
+
+                <table>
+
+                    <tr>
+                        <th>Coordinate System</th>
+                        <td>
+                            EPSG:${terrain.epsg}
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <th>Terrain Width</th>
+                        <td>
+                            ${terrain.width_m} m
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <th>Terrain Height</th>
+                        <td>
+                            ${terrain.height_m} m
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <th>Grid Size</th>
+                        <td>
+                            ${terrain.grid_size[0]}
+                            ×
+                            ${terrain.grid_size[1]}
+                        </td>
+                    </tr>
+
+                </table>
+
+            </div>
+
+
+            <!-- ================================= -->
+            <!-- SLOPE ANALYSIS -->
+            <!-- ================================= -->
+
+            <div class="section">
+
+                <h2>
+                    📐 Slope Analysis
+                </h2>
+
+                <table>
+
+                    <tr>
+                        <th>Minimum Slope</th>
+                        <td>
+                            ${slope.minimum_degrees}°
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <th>Maximum Slope</th>
+                        <td>
+                            ${slope.maximum_degrees}°
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <th>Average Slope</th>
+                        <td>
+                            ${slope.average_degrees}°
+                        </td>
+                    </tr>
+
+                </table>
+
+            </div>
+
+
+            <!-- ================================= -->
+            <!-- CATCHMENT ANALYSIS -->
+            <!-- ================================= -->
+
+            <div class="section">
+
+                <h2>
+                    🌧️ Catchment Analysis
+                </h2>
+
+                <table>
+
+                    <tr>
+                        <th>Catchment Cells</th>
+                        <td>
+                            ${catchment.cells}
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <th>Area</th>
+                        <td>
+                            ${catchment.area_m2} m²
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <th>Area</th>
+                        <td>
+                            ${catchment.area_hectares}
+                            hectares
+                        </td>
+                    </tr>
+
+                </table>
+
+
+                <br>
+
+
+                <a
+                    href="/download/${filename}"
+                    class="download-button"
+                    target="_blank"
+                >
+                    ⬇️ Download GeoJSON
+                </a>
+
+            </div>
+
+
+            <!-- ================================= -->
+            <!-- MAP -->
+            <!-- ================================= -->
+
+            <div class="section">
+
+                <h2>
+                    🗺️ Pond Location Map
+                </h2>
+
+                <div id="map"></div>
+
+            </div>
+
+        `;
+
+
+        // ========================================
+        // CREATE MAP
+        // ========================================
+
+        if (map !== null) {
+
+            map.remove();
+
+        }
+
+
+        map =
+            L.map("map").setView(
+                [
+                    pond.latitude,
+                    pond.longitude
+                ],
+                15
+            );
+
+
+        // ========================================
+        // BASE MAP
+        // ========================================
+
+        const osmLayer =
+            L.tileLayer(
+                "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+                {
+                    attribution:
+                        "&copy; OpenStreetMap contributors"
+                }
+            );
+
+        osmLayer.addTo(map);
+
+
+        // ========================================
+        // POND LAYER
+        // ========================================
+
+        const pondLayer =
+            L.layerGroup();
+
+
+        L.marker(
+            [
+                pond.latitude,
+                pond.longitude
+            ]
+        )
+        .addTo(pondLayer)
+        .bindPopup(`
+            <b>🌊 Best Pond Location</b><br>
+            Elevation:
+            ${Number(
+                pond.elevation_m
+            ).toFixed(2)} m<br>
+            Slope:
+            ${pond.slope_degrees}°<br>
+            Suitability:
+            ${Number(
+                pond.suitability_score
+            ).toFixed(4)}
+        `)
+        .openPopup();
+
+
+        pondLayer.addTo(map);
+
+
+        // ========================================
+        // CATCHMENT LAYER
+        // ========================================
+
+        const catchmentLayer =
+            L.layerGroup();
+
+
+        fetch(
+            "/geojson/" + filename
+        )
+        .then(response => {
+
+            if (!response.ok) {
+
+                throw new Error(
+                    "Unable to load catchment GeoJSON"
+                );
+
+            }
+
+            return response.json();
+
+        })
+        .then(geojson => {
+
+            L.geoJSON(
+                geojson,
+                {
+
+                    filter:
+                        function(feature) {
+
+                            return (
+                                feature.properties &&
+                                feature.properties.type ===
+                                "catchment"
+                            );
+
+                        },
+
+
+                    style:
+                        function() {
+
+                            return {
+
+                                color: "#0077cc",
+
+                                weight: 3,
+
+                                fillColor: "#0077cc",
+
+                                fillOpacity: 0.25
+
+                            };
+
+                        }
+
+                }
+
+            ).addTo(catchmentLayer);
+
+
+            catchmentLayer.addTo(map);
+
+
+            // ========================================
+            // ZOOM TO CATCHMENT
+            // ========================================
+
+            const bounds =
+                catchmentLayer.getBounds();
+
+
+            if (bounds.isValid()) {
+
+                map.fitBounds(
+                    bounds,
+                    {
+                        padding: [40, 40]
+                    }
+                );
+
+            }
+
+        })
+        .catch(error => {
+
+            console.error(
+                "Catchment boundary error:",
+                error
+            );
+
+        });
+
+
+        // ========================================
+        // LAYER CONTROL
+        // ========================================
+
+        const baseMaps = {
+
+            "OpenStreetMap":
+                osmLayer
+
+        };
+
+
+        const overlayMaps = {
+
+            "🌊 Best Pond Location":
+                pondLayer,
+
+            "🔵 Catchment Boundary":
+                catchmentLayer
+
+        };
+
+
+        L.control.layers(
+            baseMaps,
+            overlayMaps,
+            {
+                collapsed: false
+            }
+        ).addTo(map);
+
+
+        // ========================================
+        // MAP LEGEND
+        // ========================================
+
+        const legend =
+            L.control({
+                position: "bottomright"
+            });
+
+
+        legend.onAdd =
+            function() {
+
+                const div =
+                    L.DomUtil.create(
+                        "div",
+                        "map-legend"
+                    );
+
+
+                div.innerHTML = `
+
+                    <h4>
+                        🗺️ Map Legend
+                    </h4>
+
+                    <div class="legend-item">
+
+                        <span
+                            class="legend-pond"
+                        ></span>
+
+                        <span>
+                            Best Pond Location
+                        </span>
+
+                    </div>
+
+
+                    <div class="legend-item">
+
+                        <span
+                            class="legend-catchment"
+                        ></span>
+
+                        <span>
+                            Catchment Area
+                        </span>
+
+                    </div>
+
+                `;
+
+
+                return div;
+
+            };
+
+
+        legend.addTo(map);
+
+
+    }
+
+    catch (error) {
+
+        console.error(error);
+
+
+        result.innerHTML = `
+
+            <div class="status error">
+
+                ❌ Error:
+                ${error.message}
+
+            </div>
+
+        `;
+
+    }
+
+    finally {
+
+        button.disabled = false;
+
+        button.textContent =
+            "🔍 Analyze KML";
+
+    }
+
+}
+
+</script>
+
+</body>
+
+</html>
